@@ -22,7 +22,7 @@ export default function DLQPage() {
   const [entries, setEntries] = useState<DLQEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetch = useCallback(async () => {
+  const fetchEntries = useCallback(async () => {
     try {
       const res = await api.get<ApiResponse<DLQEntry[]>>('/api/metrics/dlq', token);
       setEntries(res.data);
@@ -33,13 +33,13 @@ export default function DLQPage() {
     }
   }, [token]);
 
-  useEffect(() => { fetch(); }, [fetch]);
+  useEffect(() => { fetchEntries(); }, [fetchEntries]);
 
   const retryJob = async (jobId: string) => {
     try {
       await api.post(`/api/jobs/${jobId}/retry`, {}, token);
       toast('Job requeued from DLQ', 'success');
-      fetch();
+      fetchEntries();
     } catch (err: any) {
       toast(err.message, 'error');
     }
@@ -47,76 +47,82 @@ export default function DLQPage() {
 
   return (
     <>
-      <div className="page-header">
-        <h1 className="page-title">Dead Letter Queue</h1>
-        <span className="font-label text-[13px] px-3 py-1 bg-surface-2 rounded-full border border-white/5" style={{ color: 'var(--color-text-muted)' }}>
-          {entries.length} unresolved entries
-        </span>
-      </div>
-
-      <div className="page-container" style={{ paddingTop: 0 }}>
+      <div className="page-head">
+        <div>
+          <div className="page-h1">Dead Letter Queue</div>
+          <div className="page-sub">{entries.length} unresolved entr{entries.length !== 1 ? 'ies' : 'y'}</div>
+        </div>
         {entries.length > 0 && (
-          <div className="glass-panel" style={{ background: 'var(--color-danger-dim)', border: '1px solid rgba(248,113,113,0.2)', padding: '16px 20px', marginBottom: 'var(--space-5)', display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <span className="material-symbols-outlined text-danger text-[24px]">warning</span>
-            <div>
-              <div style={{ fontWeight: 600, color: 'var(--color-danger)' }}>{entries.length} jobs have permanently failed</div>
-              <div style={{ fontSize: '13px', color: 'var(--color-text-muted)' }}>These jobs exhausted all retry attempts. Review the errors and retry or discard them.</div>
-            </div>
-          </div>
-        )}
-
-        {loading ? (
-          <div className="loading-container"><div className="spinner" /></div>
-        ) : entries.length === 0 ? (
-          <div className="empty-state">
-            <div className="empty-state-icon" style={{ color: 'var(--color-success)' }}>
-              <span className="material-symbols-outlined text-[32px]">check_circle</span>
-            </div>
-            <div className="empty-state-title">Dead Letter Queue is empty</div>
-            <div className="empty-state-desc">All jobs are healthy — no permanent failures.</div>
-          </div>
-        ) : (
-          <div className="table-wrapper glass-panel">
-            <table>
-              <thead>
-                <tr>
-                  <th>Job</th>
-                  <th>Failure Reason</th>
-                  <th>Attempts</th>
-                  <th>Failed At</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {entries.map((e) => (
-                  <tr key={e.id} id={`dlq-row-${e.id}`}>
-                    <td>
-                      <div style={{ fontWeight: 600 }}>{e.job?.name || 'Unknown'}</div>
-                      <div className="text-mono" style={{ color: 'var(--color-text-muted)' }}>{e.jobId.slice(0, 8)}…</div>
-                    </td>
-                    <td>
-                      <div style={{ maxWidth: 300, fontSize: '12px', color: 'var(--color-danger)', fontFamily: 'JetBrains Mono, monospace', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-                        {e.reason}
-                      </div>
-                    </td>
-                    <td style={{ fontWeight: 700, color: 'var(--color-danger)' }}>{e.attempts}</td>
-                    <td className="td-mono">{new Date(e.failedAt).toLocaleString()}</td>
-                    <td>
-                      <button
-                        id={`btn-retry-dlq-${e.id}`}
-                        className="btn btn-success btn-sm shadow-glow"
-                        onClick={() => retryJob(e.jobId)}
-                      >
-                        <span className="material-symbols-outlined text-[16px] mr-1">refresh</span> Retry
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <span className="badge badge-red">
+            <span className="badge-dot" style={{ background: 'var(--red)' }} />
+            {entries.length} failed
+          </span>
         )}
       </div>
+
+      {entries.length > 0 && (
+        <div className="alert alert-error" style={{ marginBottom: 16 }}>
+          <ErrorIcon />
+          <div>
+            <div style={{ fontWeight: 600, marginBottom: 2 }}>{entries.length} jobs permanently failed</div>
+            <div style={{ fontSize: 12 }}>These jobs exhausted all retry attempts. Review errors and retry or discard them.</div>
+          </div>
+        </div>
+      )}
+
+      {loading ? (
+        <div className="loading-state"><div className="spinner spinner-lg" /></div>
+      ) : entries.length === 0 ? (
+        <div className="empty-state" style={{ paddingTop: 60 }}>
+          <div className="empty-icon" style={{ color: 'var(--green)' }}><CheckIcon /></div>
+          <div className="empty-title">Dead Letter Queue is empty</div>
+          <div className="empty-sub">All jobs are healthy — no permanent failures.</div>
+        </div>
+      ) : (
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Job</th>
+                <th>Failure reason</th>
+                <th>Attempts</th>
+                <th>Failed at</th>
+                <th style={{ width: 80 }}></th>
+              </tr>
+            </thead>
+            <tbody>
+              {entries.map((e) => (
+                <tr key={e.id} id={`dlq-row-${e.id}`}>
+                  <td>
+                    <div style={{ fontWeight: 600, fontSize: 13 }}>{e.job?.name ?? 'Unknown'}</div>
+                    <div className="mono text-xs" style={{ color: 'var(--tx-3)' }}>{e.jobId.slice(0, 8)}…</div>
+                  </td>
+                  <td style={{ maxWidth: 320 }}>
+                    <div className="mono text-xs" style={{ color: 'var(--red)', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                      {e.reason}
+                    </div>
+                  </td>
+                  <td style={{ fontWeight: 700, color: 'var(--red)' }}>{e.attempts}</td>
+                  <td className="mono text-xs muted">{new Date(e.failedAt).toLocaleString()}</td>
+                  <td>
+                    <button
+                      id={`btn-retry-dlq-${e.id}`}
+                      className="btn btn-success btn-sm"
+                      onClick={() => retryJob(e.jobId)}
+                    >
+                      <RetryIcon /> Retry
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </>
   );
 }
+
+function RetryIcon() { return <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 8a6 6 0 1010.7-3.7M12 4V1l3 3-3 3" /></svg>; }
+function CheckIcon() { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>; }
+function ErrorIcon() { return <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M8 2l6 10H2L8 2z" /><path d="M8 6v3M8 11v.5" /></svg>; }

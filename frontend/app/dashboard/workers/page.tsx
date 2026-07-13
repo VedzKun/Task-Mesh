@@ -18,7 +18,10 @@ interface Worker {
 }
 
 const STATUS_BADGE: Record<string, string> = {
-  IDLE: 'badge-idle', BUSY: 'badge-running', DRAINING: 'badge-scheduled', OFFLINE: 'badge-offline',
+  IDLE:     'badge-green',
+  BUSY:     'badge-blue',
+  DRAINING: 'badge-amber',
+  OFFLINE:  'badge-gray',
 };
 
 export default function WorkersPage() {
@@ -26,7 +29,7 @@ export default function WorkersPage() {
   const [workers, setWorkers] = useState<Worker[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetch = useCallback(async () => {
+  const fetchWorkers = useCallback(async () => {
     try {
       const res = await api.get<ApiResponse<Worker[]>>('/api/workers', token);
       setWorkers(res.data);
@@ -36,106 +39,125 @@ export default function WorkersPage() {
   }, [token]);
 
   useEffect(() => {
-    fetch();
-    const iv = setInterval(fetch, 10000);
+    fetchWorkers();
+    const iv = setInterval(fetchWorkers, 10000);
     return () => clearInterval(iv);
-  }, [fetch]);
+  }, [fetchWorkers]);
 
-  const activeCount = workers.filter((w) => w.status !== 'OFFLINE').length;
-  const busyCount = workers.filter((w) => w.status === 'BUSY').length;
-  const totalRunning = workers.reduce((a, w) => a + w.currentJobs, 0);
+  const active  = workers.filter((w) => w.status !== 'OFFLINE').length;
+  const busy    = workers.filter((w) => w.status === 'BUSY').length;
+  const running = workers.reduce((a, w) => a + w.currentJobs, 0);
 
   return (
     <>
-      <div className="page-header">
-        <h1 className="page-title">Workers Fleet</h1>
-        <div className="header-live-indicator glass-panel px-3 py-1.5 rounded-full flex items-center gap-2" style={{ border: '1px solid var(--color-border)' }}>
-          <span className="w-2 h-2 rounded-full bg-success pulse-indicator" style={{ backgroundColor: 'var(--color-success)' }} />
-          <span className="font-label text-[12px] text-white">Auto-refreshes every 10s</span>
+      <div className="page-head">
+        <div>
+          <div className="page-h1">Workers</div>
+          <div className="page-sub">Auto-refreshes every 10s</div>
         </div>
+        <span className="badge badge-green">
+          <span className="badge-dot" style={{ background: 'var(--green)', animation: 'pulse-dot 2s infinite' }} />
+          Live
+        </span>
       </div>
 
-      <div className="page-container" style={{ paddingTop: 0 }}>
-        <div className="bento-grid" style={{ marginBottom: 'var(--space-6)' }}>
-          {[
-            { label: 'Active Workers', value: activeCount, color: 'var(--color-success)' },
-            { label: 'Busy Workers', value: busyCount, color: 'var(--color-primary)' },
-            { label: 'Jobs Running', value: totalRunning, color: 'var(--color-info)' },
-          ].map((s, idx) => (
-            <div key={s.label} className="col-span-12 md:col-span-4 glass-panel p-6 flex flex-col relative overflow-hidden group">
-              <div className="absolute -right-10 -top-10 w-32 h-32 rounded-full blur-3xl transition-all group-hover:scale-150" style={{ backgroundColor: s.color, opacity: 0.1 }}></div>
-              <div className="font-headline text-[32px] font-bold" style={{ color: s.color, marginBottom: '8px' }}>{s.value}</div>
-              <div className="font-label text-[12px] text-outline uppercase tracking-widest" style={{ color: 'var(--color-text-muted)' }}>{s.label}</div>
-            </div>
-          ))}
-        </div>
-
-        {loading ? (
-          <div className="loading-container"><div className="spinner" /></div>
-        ) : workers.length === 0 ? (
-          <div className="empty-state">
-            <div className="empty-state-icon">◉</div>
-            <div className="empty-state-title">No workers registered</div>
-            <div className="empty-state-desc">Start a worker process to begin processing jobs</div>
+      {/* Summary cards */}
+      <div className="stat-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)', marginBottom: 20 }}>
+        {[
+          { label: 'Active workers', value: active,  color: 'var(--green)' },
+          { label: 'Busy workers',   value: busy,    color: 'var(--brand)' },
+          { label: 'Jobs running',   value: running, color: 'var(--blue)'  },
+        ].map((s) => (
+          <div key={s.label} className="stat-card">
+            <div className="stat-label">{s.label}</div>
+            <div className="stat-value" style={{ color: s.color }}>{s.value}</div>
           </div>
-        ) : (
-          <div className="table-wrapper glass-panel">
-            <table>
-              <thead>
-                <tr>
-                  <th>Worker ID</th>
-                  <th>Host / PID</th>
-                  <th>Status</th>
-                  <th>Load</th>
-                  <th>Total Executions</th>
-                  <th>Last Heartbeat</th>
-                  <th>Registered</th>
-                </tr>
-              </thead>
-              <tbody>
-                {workers.map((w) => {
-                  const loadPct = (w.currentJobs / w.concurrency) * 100;
-                  const secAgo = Math.round((Date.now() - new Date(w.lastHeartbeat).getTime()) / 1000);
-                  return (
-                    <tr key={w.id} id={`worker-row-${w.id}`} style={{ opacity: w.isStale ? 0.6 : 1 }}>
-                      <td>
-                        <div className="text-mono">{w.id.slice(0, 8)}…</div>
-                        {w.isStale && <div style={{ fontSize: '11px', color: 'var(--color-warning)' }}>⚠ Stale</div>}
-                      </td>
-                      <td>
-                        <div style={{ fontWeight: 600 }}>{w.hostname}</div>
-                        <div className="text-mono" style={{ color: 'var(--color-text-muted)' }}>PID {w.pid}</div>
-                      </td>
-                      <td><span className={`badge ${STATUS_BADGE[w.status] || ''}`}>{w.status}</span></td>
-                      <td>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <div className="progress" style={{ width: 80 }}>
-                            <div
-                              className="progress-bar"
-                              style={{
-                                width: `${loadPct}%`,
-                                background: loadPct > 80 ? 'var(--color-danger)' : loadPct > 50 ? 'var(--color-warning)' : 'var(--color-success)',
-                              }}
-                            />
-                          </div>
-                          <span style={{ fontSize: '12px' }}>{w.currentJobs}/{w.concurrency}</span>
+        ))}
+      </div>
+
+      {/* Table */}
+      {loading ? (
+        <div className="loading-state"><div className="spinner spinner-lg" /></div>
+      ) : workers.length === 0 ? (
+        <div className="empty-state" style={{ paddingTop: 60 }}>
+          <div className="empty-icon"><WorkerIcon /></div>
+          <div className="empty-title">No workers registered</div>
+          <div className="empty-sub">Start a worker process to begin processing jobs.</div>
+        </div>
+      ) : (
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Worker</th>
+                <th>Host / PID</th>
+                <th>Status</th>
+                <th>Load</th>
+                <th>Executions</th>
+                <th>Last heartbeat</th>
+                <th>Registered</th>
+              </tr>
+            </thead>
+            <tbody>
+              {workers.map((w) => {
+                const loadPct = (w.currentJobs / w.concurrency) * 100;
+                const secAgo = Math.round((Date.now() - new Date(w.lastHeartbeat).getTime()) / 1000);
+                const stale = secAgo > 30;
+                return (
+                  <tr key={w.id} id={`worker-row-${w.id}`} style={{ opacity: w.isStale ? 0.55 : 1 }}>
+                    <td>
+                      <div className="font-mono text-xs" style={{ color: 'var(--tx-2)' }}>{w.id.slice(0, 8)}…</div>
+                      {w.isStale && <span className="badge badge-amber" style={{ marginTop: 4 }}>Stale</span>}
+                    </td>
+                    <td>
+                      <div style={{ fontWeight: 600, fontSize: 13 }}>{w.hostname}</div>
+                      <div className="mono text-xs" style={{ color: 'var(--tx-3)' }}>PID {w.pid}</div>
+                    </td>
+                    <td>
+                      <span className={`badge ${STATUS_BADGE[w.status] ?? 'badge-gray'}`}>
+                        <span className="badge-dot" style={{
+                          background: w.status === 'BUSY' ? 'var(--blue)' : w.status === 'IDLE' ? 'var(--green)' : w.status === 'DRAINING' ? 'var(--amber)' : 'var(--tx-3)'
+                        }} />
+                        {w.status}
+                      </span>
+                    </td>
+                    <td>
+                      <div className="flex items-center gap-2">
+                        <div className="progress-track" style={{ width: 64 }}>
+                          <div
+                            className="progress-fill"
+                            style={{
+                              width: `${loadPct}%`,
+                              background: loadPct > 80 ? 'var(--red)' : loadPct > 50 ? 'var(--amber)' : 'var(--green)',
+                            }}
+                          />
                         </div>
-                      </td>
-                      <td style={{ fontWeight: 600 }}>{w._count?.executions ?? 0}</td>
-                      <td>
-                        <span style={{ fontSize: '12px', color: secAgo > 30 ? 'var(--color-danger)' : 'var(--color-success)' }}>
-                          {secAgo}s ago
-                        </span>
-                      </td>
-                      <td className="td-mono">{new Date(w.registeredAt).toLocaleString()}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+                        <span className="text-xs" style={{ color: 'var(--tx-2)' }}>{w.currentJobs}/{w.concurrency}</span>
+                      </div>
+                    </td>
+                    <td style={{ fontWeight: 600 }}>{w._count?.executions ?? 0}</td>
+                    <td>
+                      <span className="text-xs" style={{ color: stale ? 'var(--red)' : 'var(--green)', fontWeight: 500 }}>
+                        {secAgo}s ago
+                      </span>
+                    </td>
+                    <td className="mono text-xs muted">{new Date(w.registeredAt).toLocaleString()}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
     </>
+  );
+}
+
+function WorkerIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="3" />
+      <path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1l2.1-2.1M17 7l2.1-2.1" />
+    </svg>
   );
 }

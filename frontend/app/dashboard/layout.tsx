@@ -7,56 +7,54 @@ import { useAuth } from '@/lib/auth-context';
 import { useRouter, usePathname } from 'next/navigation';
 import { useEffect } from 'react';
 
+const TITLE_MAP: Record<string, string> = {
+  dashboard: 'Overview',
+  queues: 'Queues',
+  jobs: 'Jobs',
+  workers: 'Workers',
+  dlq: 'Dead Letter Queue',
+  projects: 'Projects',
+};
+
 function DashboardGuard({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
 
   useEffect(() => {
-    if (!isLoading && !user) {
-      router.push('/login');
-    }
+    if (!isLoading && !user) router.push('/login');
   }, [user, isLoading, router]);
 
   if (isLoading) {
     return (
-      <div className="loading-container" style={{ minHeight: '100vh' }}>
-        <div className="spinner" />
-        <span>Loading...</span>
+      <div className="loading-state" style={{ minHeight: '100vh' }}>
+        <div className="spinner spinner-lg" />
+        <span>Loading…</span>
       </div>
     );
   }
 
   if (!user) return null;
 
+  const segment = pathname.split('/').pop() ?? 'dashboard';
+  const pageTitle = TITLE_MAP[segment] ?? segment;
+
   return (
-    <div className="layout">
+    <div className="app-shell">
       <Sidebar />
-      <div className="main-content">
-        <header className="header" style={{ height: '64px', backgroundColor: 'rgba(5, 20, 36, 0.8)', backdropFilter: 'blur(12px)', borderBottom: '1px solid var(--color-border)', display: 'flex', alignItems: 'center', padding: '0 var(--space-8)', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 50 }}>
-          <div className="flex items-center gap-4">
-            <h2 className="font-headline text-[20px] font-bold tracking-tight text-white capitalize">
-              {pathname.split('/').pop() === 'dashboard' ? 'Overview' : pathname.split('/').pop()?.replace('-', ' ')}
-            </h2>
-          </div>
-          <div className="flex items-center gap-6">
-            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/5" style={{ backgroundColor: 'var(--color-surface-2)' }}>
-              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: 'var(--color-success)' }} />
-              <span className="font-label text-[12px] text-white">System Online</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <button className="p-2 text-white/70 hover:bg-white/5 rounded-lg transition-colors">
-                <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>search</span>
-              </button>
-              <div className="w-[1px] h-6 bg-white/10" />
-              <button className="flex items-center gap-2 px-3 py-1.5 text-white font-label text-[14px] rounded-lg shadow-sm transition-transform" style={{ backgroundColor: 'var(--color-primary)' }}>
-                <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>add</span>
-                New Job
-              </button>
-            </div>
+      <div className="main-area">
+        {/* Topbar */}
+        <header className="topbar">
+          <span className="topbar-title">{pageTitle}</span>
+          <div className="status-pill">
+            <span className="status-dot" />
+            All systems operational
           </div>
         </header>
-        {children}
+        {/* Page content */}
+        <main className="page-content">
+          {children}
+        </main>
       </div>
     </div>
   );

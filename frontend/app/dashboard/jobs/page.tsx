@@ -21,14 +21,15 @@ interface Job {
 }
 
 const STATUS_BADGE: Record<string, string> = {
-  QUEUED: 'badge-queued', RUNNING: 'badge-running', COMPLETED: 'badge-completed',
-  FAILED: 'badge-failed', DLQ: 'badge-dlq', SCHEDULED: 'badge-scheduled',
-  CLAIMED: 'badge-claimed', CANCELLED: 'badge-cancelled',
+  QUEUED: 'badge-blue', RUNNING: 'badge-purple', COMPLETED: 'badge-green',
+  FAILED: 'badge-red', DLQ: 'badge-red', SCHEDULED: 'badge-amber',
+  CLAIMED: 'badge-purple', CANCELLED: 'badge-gray',
 };
 
 const STATUSES = ['', 'QUEUED', 'RUNNING', 'COMPLETED', 'FAILED', 'DLQ', 'SCHEDULED', 'CLAIMED', 'CANCELLED'];
 
-function JobDetailPanel({ jobId, token, onClose, onRetry }: { jobId: string; token: string | null; onClose: () => void; onRetry: () => void }) {
+/* ─── Job Detail Modal ─────────────────────────────── */
+function JobDetailModal({ jobId, token, onClose, onRetry }: { jobId: string; token: string | null; onClose: () => void; onRetry: () => void }) {
   const [job, setJob] = useState<any>(null);
   const { toast } = useToast();
 
@@ -37,116 +38,108 @@ function JobDetailPanel({ jobId, token, onClose, onRetry }: { jobId: string; tok
   }, [jobId, token]);
 
   const retry = async () => {
-    try {
-      await api.post(`/api/jobs/${jobId}/retry`, {}, token);
-      toast('Job queued for retry', 'success');
-      onRetry();
-      onClose();
-    } catch (err: any) {
-      toast(err.message, 'error');
-    }
+    try { await api.post(`/api/jobs/${jobId}/retry`, {}, token); toast('Job queued for retry', 'success'); onRetry(); onClose(); }
+    catch (err: any) { toast(err.message, 'error'); }
   };
 
   const cancel = async () => {
-    try {
-      await api.post(`/api/jobs/${jobId}/cancel`, {}, token);
-      toast('Job cancelled', 'success');
-      onRetry();
-      onClose();
-    } catch (err: any) {
-      toast(err.message, 'error');
-    }
+    try { await api.post(`/api/jobs/${jobId}/cancel`, {}, token); toast('Job cancelled', 'success'); onRetry(); onClose(); }
+    catch (err: any) { toast(err.message, 'error'); }
   };
 
-  if (!job) return null;
+  if (!job) return (
+    <div className="modal-backdrop" onClick={onClose}>
+      <div className="modal-box" onClick={(e) => e.stopPropagation()}>
+        <div className="loading-state" style={{ padding: 48 }}><div className="spinner spinner-lg" /></div>
+      </div>
+    </div>
+  );
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" style={{ maxWidth: 680 }} onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
+    <div className="modal-backdrop" onClick={onClose}>
+      <div className="modal-box modal-wide" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-head">
           <div>
-            <div className="modal-title font-headline text-[20px]">{job.name}</div>
-            <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginTop: 2 }} className="text-mono">{job.id}</div>
+            <div className="modal-heading">{job.name}</div>
+            <div className="font-mono text-xs" style={{ color: 'var(--tx-3)', marginTop: 3 }}>{job.id}</div>
           </div>
-          <div style={{ display: 'flex', gap: '8px' }}>
+          <div className="flex items-center gap-2">
             {['FAILED', 'DLQ', 'CANCELLED'].includes(job.status) && (
-              <button className="btn btn-success btn-sm shadow-glow" onClick={retry}>
-                <span className="material-symbols-outlined text-[16px] mr-1">refresh</span> Retry
-              </button>
+              <button className="btn btn-success btn-sm" onClick={retry}><RetryIcon /> Retry</button>
             )}
             {['QUEUED', 'SCHEDULED'].includes(job.status) && (
-              <button className="btn btn-danger btn-sm" onClick={cancel}>
-                <span className="material-symbols-outlined text-[16px] mr-1">cancel</span> Cancel
-              </button>
+              <button className="btn btn-danger btn-sm" onClick={cancel}><CloseIcon /> Cancel</button>
             )}
-            <button className="btn btn-ghost btn-sm btn-icon" onClick={onClose}>
-              <span className="material-symbols-outlined">close</span>
-            </button>
+            <button className="btn btn-ghost btn-icon btn-sm" onClick={onClose}><CloseIcon /></button>
           </div>
         </div>
-        <div className="modal-body" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
-          {/* Status & Info */}
-          <div className="grid-2" style={{ gap: '12px' }}>
+        <div className="modal-body-inner">
+          {/* Info grid */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1, background: 'var(--border)', border: '1px solid var(--border)', borderRadius: 'var(--r-md)', overflow: 'hidden' }}>
             {[
-              ['Status', <span key="s" className={`badge ${STATUS_BADGE[job.status] || ''}`}>{job.status}</span>],
-              ['Type', <span key="t" className="text-mono">{job.jobType}</span>],
-              ['Priority', job.priority],
+              ['Status', <span key="s" className={`badge ${STATUS_BADGE[job.status] ?? 'badge-gray'}`}>{job.status}</span>],
+              ['Type', <span key="t" className="font-mono text-xs">{job.jobType}</span>],
+              ['Priority', `P${job.priority}`],
               ['Attempts', `${job.attempts} / ${job.maxRetries}`],
-              ['Queue', job.queue?.name],
+              ['Queue', job.queue?.name ?? '—'],
               ['Run At', new Date(job.runAt).toLocaleString()],
-            ].map(([label, val]) => (
-              <div key={label as string} style={{ fontSize: '13px' }}>
-                <div style={{ color: 'var(--color-text-muted)', marginBottom: 2 }}>{label as string}</div>
-                <div style={{ fontWeight: 500 }}>{val as any}</div>
+              ['Created', new Date(job.createdAt).toLocaleString()],
+              ['Completed', job.completedAt ? new Date(job.completedAt).toLocaleString() : '—'],
+            ].map(([k, v]) => (
+              <div key={k as string} style={{ background: 'var(--bg-elevated)', padding: '10px 14px' }}>
+                <div style={{ fontSize: 11, color: 'var(--tx-3)', fontWeight: 500, marginBottom: 4 }}>{k as string}</div>
+                <div style={{ fontSize: 13, color: 'var(--tx-1)' }}>{v as any}</div>
               </div>
             ))}
           </div>
 
           {/* Payload */}
           <div>
-            <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginBottom: 8 }}>Payload</div>
-            <pre style={{ background: 'var(--color-surface-2)', borderRadius: 'var(--radius-md)', padding: '12px', fontSize: '12px', overflowX: 'auto', border: '1px solid var(--color-border)' }}>
-              {JSON.stringify(job.payload, null, 2)}
-            </pre>
+            <div style={{ fontSize: 11.5, color: 'var(--tx-3)', fontWeight: 500, marginBottom: 8 }}>PAYLOAD</div>
+            <div className="code-block">{JSON.stringify(job.payload, null, 2)}</div>
           </div>
 
           {/* Error */}
           {job.lastError && (
-            <div style={{ background: 'var(--color-danger-dim)', border: '1px solid rgba(248,113,113,0.2)', borderRadius: 'var(--radius-md)', padding: '12px' }}>
-              <div style={{ fontSize: '12px', color: 'var(--color-danger)', fontWeight: 600, marginBottom: 4 }}>Last Error</div>
-              <div style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>{job.lastError}</div>
+            <div className="alert alert-error">
+              <ErrorIcon />
+              <div>
+                <div style={{ fontWeight: 600, marginBottom: 4 }}>Last error</div>
+                <div style={{ fontSize: 12 }}>{job.lastError}</div>
+              </div>
             </div>
           )}
 
-          {/* Executions */}
+          {/* Execution history */}
           {job.executions?.length > 0 && (
             <div>
-              <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginBottom: 8 }}>Execution History ({job.executions.length})</div>
-              {job.executions.slice(0, 5).map((ex: any) => (
-                <div key={ex.id} style={{ background: 'var(--color-surface-2)', borderRadius: 'var(--radius-md)', padding: '10px 12px', fontSize: '12px', marginBottom: 6, border: '1px solid var(--color-border)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                    <span style={{ fontWeight: 600 }}>Attempt {ex.attempt}</span>
-                    <span className={`badge badge-${ex.status.toLowerCase()}`}>{ex.status}</span>
+              <div style={{ fontSize: 11.5, color: 'var(--tx-3)', fontWeight: 500, marginBottom: 8 }}>EXECUTION HISTORY</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {job.executions.slice(0, 5).map((ex: any) => (
+                  <div key={ex.id} style={{ background: 'var(--bg-subtle)', border: '1px solid var(--border)', borderRadius: 'var(--r-md)', padding: '10px 12px' }}>
+                    <div className="flex items-center gap-2" style={{ marginBottom: 4 }}>
+                      <span style={{ fontSize: 12, fontWeight: 600 }}>Attempt {ex.attempt}</span>
+                      <span className={`badge ${STATUS_BADGE[ex.status] ?? 'badge-gray'} text-xs`}>{ex.status}</span>
+                      <span className="ml-auto text-xs" style={{ color: 'var(--tx-3)' }}>{ex.durationMs ? `${ex.durationMs}ms` : 'Running'}</span>
+                    </div>
+                    <div className="text-xs" style={{ color: 'var(--tx-3)' }}>{new Date(ex.startedAt).toLocaleString()}</div>
+                    {ex.errorMessage && <div className="text-xs" style={{ color: 'var(--red)', marginTop: 4 }}>{ex.errorMessage}</div>}
                   </div>
-                  <div style={{ color: 'var(--color-text-muted)' }}>
-                    {new Date(ex.startedAt).toLocaleString()} · {ex.durationMs ? `${ex.durationMs}ms` : 'In progress'}
-                  </div>
-                  {ex.errorMessage && <div style={{ color: 'var(--color-danger)', marginTop: 4 }}>{ex.errorMessage}</div>}
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           )}
 
           {/* Logs */}
           {job.logs?.length > 0 && (
             <div>
-              <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginBottom: 8 }}>Logs</div>
-              <div style={{ background: 'var(--color-surface-2)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)', maxHeight: 200, overflowY: 'auto' }}>
+              <div style={{ fontSize: 11.5, color: 'var(--tx-3)', fontWeight: 500, marginBottom: 8 }}>LOGS</div>
+              <div style={{ background: 'var(--bg-subtle)', border: '1px solid var(--border)', borderRadius: 'var(--r-md)', maxHeight: 180, overflowY: 'auto' }}>
                 {job.logs.map((log: any) => (
-                  <div key={log.id} style={{ display: 'flex', gap: '12px', padding: '6px 12px', borderBottom: '1px solid var(--color-border)', fontSize: '12px' }}>
-                    <span style={{ color: log.level === 'ERROR' ? 'var(--color-danger)' : log.level === 'WARN' ? 'var(--color-warning)' : 'var(--color-text-muted)', fontWeight: 600, minWidth: 40 }}>{log.level}</span>
-                    <span style={{ color: 'var(--color-text-muted)', flexShrink: 0 }}>{new Date(log.timestamp).toLocaleTimeString()}</span>
-                    <span>{log.message}</span>
+                  <div key={log.id} className="flex gap-3" style={{ padding: '6px 12px', borderBottom: '1px solid var(--border)', fontSize: 11.5, fontFamily: "'JetBrains Mono', monospace" }}>
+                    <span style={{ color: log.level === 'ERROR' ? 'var(--red)' : log.level === 'WARN' ? 'var(--amber)' : 'var(--tx-3)', fontWeight: 600, width: 36 }}>{log.level}</span>
+                    <span style={{ color: 'var(--tx-3)', flexShrink: 0 }}>{new Date(log.timestamp).toLocaleTimeString()}</span>
+                    <span style={{ color: 'var(--tx-2)' }}>{log.message}</span>
                   </div>
                 ))}
               </div>
@@ -158,6 +151,7 @@ function JobDetailPanel({ jobId, token, onClose, onRetry }: { jobId: string; tok
   );
 }
 
+/* ─── Main Page ────────────────────────────────────── */
 export default function JobsPage() {
   const { token } = useAuth();
   const { toast } = useToast();
@@ -188,104 +182,108 @@ export default function JobsPage() {
 
   return (
     <>
-      <div className="page-header">
-        <h1 className="page-title">Job Explorer</h1>
-        <div style={{ display: 'flex', gap: '8px' }}>
+      <div className="page-head">
+        <div>
+          <div className="page-h1">Jobs</div>
+          <div className="page-sub">{pagination?.total ?? '–'} total jobs</div>
+        </div>
+        <div className="flex items-center gap-2">
           <input
-            className="form-input glass-panel"
-            style={{ width: 200, padding: '8px 12px' }}
-            placeholder="Search jobs..."
+            className="form-input"
+            style={{ width: 190 }}
+            placeholder="Search jobs…"
             value={filters.search}
             onChange={(e) => setFilters({ ...filters, search: e.target.value, page: 1 })}
             id="input-job-search"
           />
           <select
-            className="form-select glass-panel"
-            style={{ width: 150, padding: '8px 12px' }}
+            className="form-select"
+            style={{ width: 140 }}
             value={filters.status}
             onChange={(e) => setFilters({ ...filters, status: e.target.value, page: 1 })}
             id="select-job-status"
           >
-            {STATUSES.map((s) => <option key={s} value={s}>{s || 'All Status'}</option>)}
+            {STATUSES.map((s) => <option key={s} value={s}>{s || 'All statuses'}</option>)}
           </select>
         </div>
       </div>
 
-      <div className="page-container" style={{ paddingTop: 0 }}>
-        {loading ? (
-          <div className="loading-container"><div className="spinner" /></div>
-        ) : (
-          <>
-            <div className="table-wrapper glass-panel">
-              <table>
-                <thead>
+      {loading ? (
+        <div className="loading-state"><div className="spinner spinner-lg" /></div>
+      ) : (
+        <>
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Job</th>
+                  <th>Queue</th>
+                  <th>Status</th>
+                  <th>Type</th>
+                  <th>Priority</th>
+                  <th>Attempts</th>
+                  <th>Scheduled</th>
+                  <th>Created</th>
+                </tr>
+              </thead>
+              <tbody>
+                {jobs.length === 0 ? (
                   <tr>
-                    <th>Job</th>
-                    <th>Queue</th>
-                    <th>Status</th>
-                    <th>Type</th>
-                    <th>Priority</th>
-                    <th>Attempts</th>
-                    <th>Scheduled</th>
-                    <th>Created</th>
+                    <td colSpan={8} style={{ textAlign: 'center', padding: '48px', color: 'var(--tx-3)' }}>
+                      No jobs found
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {jobs.length === 0 ? (
-                    <tr>
-                      <td colSpan={8} style={{ textAlign: 'center', padding: '48px', color: 'var(--color-text-muted)' }}>
-                        No jobs found
-                      </td>
-                    </tr>
-                  ) : jobs.map((job) => (
-                    <tr key={job.id} style={{ cursor: 'pointer' }} onClick={() => setSelectedJob(job.id)} id={`job-row-${job.id}`}>
-                      <td>
-                        <div style={{ fontWeight: 600 }}>{job.name}</div>
-                        <div className="text-mono" style={{ color: 'var(--color-text-muted)' }}>{job.id.slice(0, 8)}…</div>
-                      </td>
-                      <td><span style={{ fontSize: '12px' }}>{job.queue?.name || '—'}</span></td>
-                      <td><span className={`badge ${STATUS_BADGE[job.status] || ''}`}>{job.status}</span></td>
-                      <td><span style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>{job.jobType}</span></td>
-                      <td>
-                        <span style={{ fontWeight: 600, color: job.priority >= 8 ? 'var(--color-danger)' : job.priority >= 5 ? 'var(--color-warning)' : 'var(--color-text-muted)' }}>
-                          P{job.priority}
-                        </span>
-                      </td>
-                      <td>
-                        <span style={{ color: job.attempts >= job.maxRetries ? 'var(--color-danger)' : 'var(--color-text-muted)' }}>
-                          {job.attempts}/{job.maxRetries}
-                        </span>
-                      </td>
-                      <td className="td-mono">{new Date(job.runAt).toLocaleString()}</td>
-                      <td className="td-mono">{new Date(job.createdAt).toLocaleString()}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                ) : jobs.map((job) => (
+                  <tr
+                    key={job.id}
+                    style={{ cursor: 'pointer' }}
+                    onClick={() => setSelectedJob(job.id)}
+                    id={`job-row-${job.id}`}
+                  >
+                    <td>
+                      <div style={{ fontWeight: 600, fontSize: 13 }}>{job.name}</div>
+                      <div className="mono text-xs" style={{ color: 'var(--tx-3)' }}>{job.id.slice(0, 8)}…</div>
+                    </td>
+                    <td className="muted">{job.queue?.name ?? '—'}</td>
+                    <td><span className={`badge ${STATUS_BADGE[job.status] ?? 'badge-gray'}`}>{job.status}</span></td>
+                    <td className="mono text-xs" style={{ color: 'var(--tx-2)' }}>{job.jobType}</td>
+                    <td style={{ fontWeight: 600, color: job.priority >= 8 ? 'var(--red)' : job.priority >= 5 ? 'var(--amber)' : 'var(--tx-3)' }}>
+                      P{job.priority}
+                    </td>
+                    <td className="muted" style={{ color: job.attempts >= job.maxRetries ? 'var(--red)' : undefined }}>
+                      {job.attempts}/{job.maxRetries}
+                    </td>
+                    <td className="mono text-xs muted">{new Date(job.runAt).toLocaleString()}</td>
+                    <td className="mono text-xs muted">{new Date(job.createdAt).toLocaleString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
 
-            {/* Pagination */}
-            {pagination && pagination.pages > 1 && (
-              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', marginTop: '16px' }}>
-                <button className="btn btn-ghost btn-sm" disabled={filters.page <= 1} onClick={() => setFilters((f) => ({ ...f, page: f.page - 1 }))}>← Prev</button>
-                <span style={{ fontSize: '13px', color: 'var(--color-text-muted)' }}>
-                  Page {pagination.page} of {pagination.pages} ({pagination.total} total)
-                </span>
-                <button className="btn btn-ghost btn-sm" disabled={filters.page >= pagination.pages} onClick={() => setFilters((f) => ({ ...f, page: f.page + 1 }))}>Next →</button>
-              </div>
-            )}
-          </>
-        )}
-      </div>
+          {pagination && pagination.pages > 1 && (
+            <div className="flex items-center gap-2" style={{ justifyContent: 'center', marginTop: 16 }}>
+              <button className="btn btn-secondary btn-sm" disabled={filters.page <= 1} onClick={() => setFilters((f) => ({ ...f, page: f.page - 1 }))}>
+                ← Prev
+              </button>
+              <span style={{ fontSize: 13, color: 'var(--tx-2)' }}>
+                Page {pagination.page} of {pagination.pages}
+              </span>
+              <button className="btn btn-secondary btn-sm" disabled={filters.page >= pagination.pages} onClick={() => setFilters((f) => ({ ...f, page: f.page + 1 }))}>
+                Next →
+              </button>
+            </div>
+          )}
+        </>
+      )}
 
       {selectedJob && (
-        <JobDetailPanel
-          jobId={selectedJob}
-          token={token}
-          onClose={() => setSelectedJob(null)}
-          onRetry={fetchJobs}
-        />
+        <JobDetailModal jobId={selectedJob} token={token} onClose={() => setSelectedJob(null)} onRetry={fetchJobs} />
       )}
     </>
   );
 }
+
+function CloseIcon() { return <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M3 3l10 10M13 3L3 13" /></svg>; }
+function RetryIcon() { return <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 8a6 6 0 1010.7-3.7M12 4V1l3 3-3 3" /></svg>; }
+function ErrorIcon() { return <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><circle cx="8" cy="8" r="6" /><path d="M8 5v3M8 10v.5" /></svg>; }

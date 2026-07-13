@@ -1,21 +1,19 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { AuthProvider, useAuth } from '@/lib/auth-context';
 import { ToastProvider, useToast } from '@/lib/toast-context';
 
 function LoginForm() {
-  const { login } = useAuth();
+  const { login, register } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
+  const [isRegister, setIsRegister] = useState(false);
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [isRegister, setIsRegister] = useState(false);
-  const [name, setName] = useState('');
-  const { register } = useAuth();
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,46 +33,93 @@ function LoginForm() {
   };
 
   return (
-    <div className="auth-page">
-      <div className="auth-card glass-panel" style={{ padding: 'var(--space-8)' }}>
-        <div className="auth-logo" style={{ marginBottom: 'var(--space-6)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg overflow-hidden flex-shrink-0" style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-accent))', boxShadow: 'var(--shadow-glow)' }}>
-            <span className="material-symbols-outlined text-white" style={{ fontSize: '28px' }}>hub</span>
+    <div className="auth-wrap">
+      <div className="auth-card">
+        {/* Logo */}
+        <div className="auth-logo">
+          <div className="logo-mark">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+              <rect x="1" y="1" width="6" height="6" rx="1.5" fill="white" />
+              <rect x="9" y="1" width="6" height="6" rx="1.5" fill="white" opacity=".6" />
+              <rect x="1" y="9" width="6" height="6" rx="1.5" fill="white" opacity=".6" />
+              <rect x="9" y="9" width="6" height="6" rx="1.5" fill="white" opacity=".3" />
+            </svg>
           </div>
-          <span className="logo-text font-headline text-[24px]">Task-Mesh</span>
+          <span className="logo-name">TaskMesh</span>
         </div>
 
-        <h1 className="auth-title">{isRegister ? 'Create account' : 'Welcome back'}</h1>
-        <p className="auth-subtitle">{isRegister ? 'Sign up to start scheduling jobs' : 'Sign in to your Task-Mesh account'}</p>
+        <h1 className="auth-heading">
+          {isRegister ? 'Create an account' : 'Sign in'}
+        </h1>
+        <p className="auth-sub">
+          {isRegister
+            ? 'Get started with TaskMesh'
+            : 'Welcome back — sign in to your workspace'}
+        </p>
 
-        <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <form className="auth-form" onSubmit={submit}>
           {isRegister && (
             <div className="form-group">
-              <label className="form-label">Full Name</label>
-              <input id="input-register-name" className="form-input" type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="John Doe" required />
+              <label className="form-label">Full name</label>
+              <input
+                id="input-register-name"
+                className="form-input"
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Jane Smith"
+                required
+              />
             </div>
           )}
           <div className="form-group">
             <label className="form-label">Email</label>
-            <input id="input-email" className="form-input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" required />
+            <input
+              id="input-email"
+              className="form-input"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@example.com"
+              required
+            />
           </div>
           <div className="form-group">
             <label className="form-label">Password</label>
-            <input id="input-password" className="form-input" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required minLength={8} />
+            <input
+              id="input-password"
+              className="form-input"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              required
+              minLength={8}
+            />
           </div>
-
-          <button id="btn-auth-submit" type="submit" className="btn btn-primary btn-lg shadow-glow" style={{ marginTop: '16px', justifyContent: 'center' }} disabled={loading}>
-            {loading ? 'Please wait...' : isRegister ? 'Create Account' : 'Sign In'}
+          <button
+            id="btn-auth-submit"
+            type="submit"
+            className="btn btn-primary w-full"
+            style={{ marginTop: 4, height: 38, fontSize: 13.5 }}
+            disabled={loading}
+          >
+            {loading ? (
+              <>
+                <span className="spinner" />
+                Please wait…
+              </>
+            ) : isRegister ? (
+              'Create account'
+            ) : (
+              'Continue'
+            )}
           </button>
         </form>
 
-        <div style={{ marginTop: '24px', textAlign: 'center', fontSize: '13px', color: 'var(--color-text-muted)' }}>
-          {isRegister ? 'Already have an account? ' : "Don't have an account? "}
-          <button
-            id="btn-toggle-auth-mode"
-            onClick={() => setIsRegister(!isRegister)}
-            style={{ background: 'none', border: 'none', color: 'var(--color-primary)', fontWeight: 600, cursor: 'pointer' }}
-          >
+        <div className="auth-switch">
+          {isRegister ? 'Already have an account?' : "Don't have an account?"}{' '}
+          <button id="btn-toggle-auth-mode" onClick={() => setIsRegister(!isRegister)}>
             {isRegister ? 'Sign in' : 'Sign up'}
           </button>
         </div>

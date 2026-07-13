@@ -14,7 +14,8 @@ interface Project {
   _count?: { queues: number };
 }
 
-function CreateProjectModal({ onClose, onCreated }: { onClose: () => void; onCreated: (p: Project, key: string) => void }) {
+/* ─── Create Modal ─────────────────────────────────────── */
+function CreateModal({ onClose, onCreated }: { onClose: () => void; onCreated: (p: Project, key: string) => void }) {
   const { token } = useAuth();
   const [name, setName] = useState('');
   const [desc, setDesc] = useState('');
@@ -34,29 +35,29 @@ function CreateProjectModal({ onClose, onCreated }: { onClose: () => void; onCre
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <span className="modal-title font-headline text-[20px]">Create New Project</span>
-          <button className="btn btn-ghost btn-sm btn-icon" onClick={onClose}>
-            <span className="material-symbols-outlined">close</span>
+    <div className="modal-backdrop" onClick={onClose}>
+      <div className="modal-box" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-head">
+          <span className="modal-heading">New project</span>
+          <button className="btn btn-ghost btn-icon btn-sm" onClick={onClose}>
+            <CloseIcon />
           </button>
         </div>
         <form onSubmit={submit}>
-          <div className="modal-body">
+          <div className="modal-body-inner">
             <div className="form-group">
-              <label className="form-label">Project Name *</label>
+              <label className="form-label">Project name *</label>
               <input id="input-project-name" className="form-input" value={name} onChange={(e) => setName(e.target.value)} placeholder="my-service" required />
             </div>
             <div className="form-group">
               <label className="form-label">Description</label>
-              <input className="form-input" value={desc} onChange={(e) => setDesc(e.target.value)} placeholder="Optional description" />
+              <input className="form-input" value={desc} onChange={(e) => setDesc(e.target.value)} placeholder="Optional" />
             </div>
           </div>
-          <div className="modal-footer">
-            <button type="button" className="btn btn-ghost" onClick={onClose}>Cancel</button>
-            <button id="btn-create-project-submit" type="submit" className="btn btn-primary" disabled={loading}>
-              {loading ? 'Creating...' : 'Create Project'}
+          <div className="modal-foot">
+            <button type="button" className="btn btn-secondary btn-sm" onClick={onClose}>Cancel</button>
+            <button id="btn-create-project-submit" type="submit" className="btn btn-primary btn-sm" disabled={loading}>
+              {loading ? <><span className="spinner" /> Creating…</> : 'Create project'}
             </button>
           </div>
         </form>
@@ -65,7 +66,8 @@ function CreateProjectModal({ onClose, onCreated }: { onClose: () => void; onCre
   );
 }
 
-function ApiKeyDisplay({ apiKey, prefix, onClose }: { apiKey: string; prefix: string; onClose: () => void }) {
+/* ─── API Key Modal ────────────────────────────────────── */
+function ApiKeyModal({ apiKey, onClose }: { apiKey: string; onClose: () => void }) {
   const [copied, setCopied] = useState(false);
   const copy = () => {
     navigator.clipboard.writeText(apiKey);
@@ -73,35 +75,37 @@ function ApiKeyDisplay({ apiKey, prefix, onClose }: { apiKey: string; prefix: st
     setTimeout(() => setCopied(false), 2000);
   };
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <span className="modal-title">🔑 Save Your API Key</span>
+    <div className="modal-backdrop" onClick={onClose}>
+      <div className="modal-box" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-head">
+          <span className="modal-heading">Save your API key</span>
         </div>
-        <div className="modal-body">
-          <div style={{ background: 'var(--color-warning-dim)', border: '1px solid var(--color-warning)', borderRadius: 'var(--radius-md)', padding: '12px 16px', fontSize: '13px', color: 'var(--color-warning)' }}>
-            ⚠ This key will only be shown once. Save it securely.
+        <div className="modal-body-inner">
+          <div className="alert alert-warn">
+            <WarnIcon />
+            <span>This key won't be shown again. Store it somewhere safe.</span>
           </div>
-          <div style={{ background: 'var(--color-surface-2)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', padding: '12px 16px', fontFamily: 'JetBrains Mono, monospace', fontSize: '13px', wordBreak: 'break-all' }}>
-            {apiKey}
-          </div>
-          <button className="btn btn-primary w-full" onClick={copy}>{copied ? '✓ Copied!' : 'Copy Key'}</button>
+          <div className="code-block">{apiKey}</div>
+          <button className="btn btn-primary w-full" onClick={copy}>
+            {copied ? '✓ Copied!' : 'Copy to clipboard'}
+          </button>
         </div>
-        <div className="modal-footer">
-          <button className="btn btn-ghost" onClick={onClose}>I've saved it</button>
+        <div className="modal-foot">
+          <button className="btn btn-secondary btn-sm" onClick={onClose}>I've saved it</button>
         </div>
       </div>
     </div>
   );
 }
 
+/* ─── Page ─────────────────────────────────────────────── */
 export default function ProjectsPage() {
   const { token } = useAuth();
   const { toast } = useToast();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
-  const [newKey, setNewKey] = useState<{ key: string; prefix: string } | null>(null);
+  const [newKey, setNewKey] = useState<string | null>(null);
 
   const fetchProjects = useCallback(async () => {
     try {
@@ -119,11 +123,11 @@ export default function ProjectsPage() {
   const handleCreated = (project: Project, apiKey: string) => {
     setProjects((prev) => [project, ...prev]);
     setShowCreate(false);
-    setNewKey({ key: apiKey, prefix: project.apiKeyPrefix });
+    setNewKey(apiKey);
   };
 
   const deleteProject = async (id: string, name: string) => {
-    if (!confirm(`Delete project "${name}"? All queues and jobs will be permanently deleted.`)) return;
+    if (!confirm(`Delete "${name}"? All queues and jobs will be removed.`)) return;
     try {
       await api.delete(`/api/projects/${id}`, token);
       setProjects((prev) => prev.filter((p) => p.id !== id));
@@ -135,61 +139,88 @@ export default function ProjectsPage() {
 
   return (
     <>
-      <div className="page-header">
-        <h1 className="page-title">Projects Overview</h1>
-        <button id="btn-new-project" className="btn btn-primary shadow-glow" onClick={() => setShowCreate(true)}>
-          <span className="material-symbols-outlined text-[18px]">add</span> New Project
+      {/* Header */}
+      <div className="page-head">
+        <div>
+          <div className="page-h1">Projects</div>
+          <div className="page-sub">{projects.length} project{projects.length !== 1 ? 's' : ''}</div>
+        </div>
+        <button id="btn-new-project" className="btn btn-primary btn-sm" onClick={() => setShowCreate(true)}>
+          <PlusIcon /> New project
         </button>
       </div>
 
-      <div className="page-container" style={{ paddingTop: 0 }}>
-        {loading ? (
-          <div className="loading-container"><div className="spinner" /><span>Loading projects...</span></div>
-        ) : projects.length === 0 ? (
-          <div className="empty-state">
-            <div className="empty-state-icon">⊞</div>
-            <div className="empty-state-title">No projects yet</div>
-            <div className="empty-state-desc">Create your first project to get started</div>
-            <button className="btn btn-primary" onClick={() => setShowCreate(true)}>Create Project</button>
-          </div>
-        ) : (
-          <div className="bento-grid">
-            {projects.map((p) => (
-              <div key={p.id} className="col-span-12 md:col-span-6 xl:col-span-4 glass-panel p-6 flex flex-col transition-all hover:border-primary/50 group relative overflow-hidden">
-                <div className="absolute -right-10 -top-10 w-32 h-32 bg-primary/5 rounded-full blur-2xl transition-all group-hover:scale-150"></div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px', position: 'relative', zIndex: 1 }}>
-                  <span className="font-headline text-[20px] font-bold text-white">{p.name}</span>
-                  <button
-                    className="p-1 opacity-0 group-hover:opacity-100 text-danger hover:bg-danger/10 rounded transition-all"
-                    onClick={() => deleteProject(p.id, p.name)}
-                    title="Delete project"
-                  >
-                    <span className="material-symbols-outlined text-[20px]">delete</span>
-                  </button>
+      {/* Body */}
+      {loading ? (
+        <div className="loading-state"><div className="spinner spinner-lg" /><span>Loading projects…</span></div>
+      ) : projects.length === 0 ? (
+        <div className="empty-state" style={{ paddingTop: 80 }}>
+          <div className="empty-icon"><FolderIcon /></div>
+          <div className="empty-title">No projects yet</div>
+          <div className="empty-sub">Create a project to start managing job queues and scheduling work.</div>
+          <button className="btn btn-primary btn-sm" style={{ marginTop: 12 }} onClick={() => setShowCreate(true)}>
+            <PlusIcon /> Create project
+          </button>
+        </div>
+      ) : (
+        <div className="card-grid">
+          {projects.map((p) => (
+            <div key={p.id} className="project-card" id={`project-card-${p.id}`}>
+              <div className="project-card-head">
+                <div>
+                  <div className="project-name">{p.name}</div>
+                  {p.description && <div className="project-desc" style={{ marginTop: 4 }}>{p.description}</div>}
                 </div>
-                {p.description && <p style={{ color: 'var(--color-text-muted)', fontSize: '14px', marginBottom: '24px', flex: 1, position: 'relative', zIndex: 1 }}>{p.description}</p>}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: 'auto', position: 'relative', zIndex: 1 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
-                    <span style={{ color: 'var(--color-text-muted)' }}>API Key</span>
-                    <span className="text-mono">{p.apiKeyPrefix}...</span>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
-                    <span style={{ color: 'var(--color-text-muted)' }}>Queues</span>
-                    <span style={{ fontWeight: 600 }}>{p._count?.queues ?? 0}</span>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
-                    <span style={{ color: 'var(--color-text-muted)' }}>Created</span>
-                    <span>{new Date(p.createdAt).toLocaleDateString()}</span>
-                  </div>
+                <button
+                  className="btn btn-ghost btn-icon btn-sm"
+                  style={{ color: 'var(--tx-3)' }}
+                  onClick={() => deleteProject(p.id, p.name)}
+                  title="Delete project"
+                >
+                  <TrashIcon />
+                </button>
+              </div>
+
+              <div className="project-meta">
+                <div className="meta-row">
+                  <span className="meta-key">API key</span>
+                  <span className="meta-val">{p.apiKeyPrefix}…</span>
+                </div>
+                <div className="meta-row">
+                  <span className="meta-key">Queues</span>
+                  <span className="meta-val" style={{ fontFamily: 'Inter', fontSize: 12 }}>{p._count?.queues ?? 0}</span>
+                </div>
+                <div className="meta-row">
+                  <span className="meta-key">Created</span>
+                  <span className="meta-val" style={{ fontFamily: 'Inter', fontSize: 12 }}>
+                    {new Date(p.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                  </span>
                 </div>
               </div>
-            ))}
-          </div>
-        )}
-      </div>
+            </div>
+          ))}
+        </div>
+      )}
 
-      {showCreate && <CreateProjectModal onClose={() => setShowCreate(false)} onCreated={handleCreated} />}
-      {newKey && <ApiKeyDisplay apiKey={newKey.key} prefix={newKey.prefix} onClose={() => setNewKey(null)} />}
+      {showCreate && <CreateModal onClose={() => setShowCreate(false)} onCreated={handleCreated} />}
+      {newKey && <ApiKeyModal apiKey={newKey} onClose={() => setNewKey(null)} />}
     </>
   );
+}
+
+/* ── Icons ── */
+function PlusIcon() {
+  return <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M8 2v12M2 8h12" /></svg>;
+}
+function CloseIcon() {
+  return <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M3 3l10 10M13 3L3 13" /></svg>;
+}
+function WarnIcon() {
+  return <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M8 2l6 10H2L8 2z" /><path d="M8 6v3M8 11v.5" /></svg>;
+}
+function TrashIcon() {
+  return <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M2 4h12M5 4V3h6v1M6 7v5M10 7v5M3 4l1 10h8l1-10" /></svg>;
+}
+function FolderIcon() {
+  return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" /></svg>;
 }
