@@ -47,17 +47,17 @@ export default function DLQPage() {
 
   return (
     <>
-      <header className="header">
-        <h1 className="header-title">Dead Letter Queue</h1>
-        <span style={{ fontSize: '13px', color: 'var(--color-text-muted)' }}>
+      <div className="page-header">
+        <h1 className="page-title">Dead Letter Queue</h1>
+        <span className="font-label text-[13px] px-3 py-1 bg-surface-2 rounded-full border border-white/5" style={{ color: 'var(--color-text-muted)' }}>
           {entries.length} unresolved entries
         </span>
-      </header>
+      </div>
 
-      <div className="page-container">
+      <div className="page-container" style={{ paddingTop: 0 }}>
         {entries.length > 0 && (
-          <div style={{ background: 'var(--color-danger-dim)', border: '1px solid rgba(248,113,113,0.2)', borderRadius: 'var(--radius-lg)', padding: '16px 20px', marginBottom: 'var(--space-5)', display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <span style={{ fontSize: '20px' }}>⚠</span>
+          <div className="glass-panel" style={{ background: 'var(--color-danger-dim)', border: '1px solid rgba(248,113,113,0.2)', padding: '16px 20px', marginBottom: 'var(--space-5)', display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <span className="material-symbols-outlined text-danger text-[24px]">warning</span>
             <div>
               <div style={{ fontWeight: 600, color: 'var(--color-danger)' }}>{entries.length} jobs have permanently failed</div>
               <div style={{ fontSize: '13px', color: 'var(--color-text-muted)' }}>These jobs exhausted all retry attempts. Review the errors and retry or discard them.</div>
@@ -69,12 +69,14 @@ export default function DLQPage() {
           <div className="loading-container"><div className="spinner" /></div>
         ) : entries.length === 0 ? (
           <div className="empty-state">
-            <div className="empty-state-icon" style={{ color: 'var(--color-success)' }}>✓</div>
+            <div className="empty-state-icon" style={{ color: 'var(--color-success)' }}>
+              <span className="material-symbols-outlined text-[32px]">check_circle</span>
+            </div>
             <div className="empty-state-title">Dead Letter Queue is empty</div>
             <div className="empty-state-desc">All jobs are healthy — no permanent failures.</div>
           </div>
         ) : (
-          <div className="table-wrapper">
+          <div className="table-wrapper glass-panel">
             <table>
               <thead>
                 <tr>
@@ -102,10 +104,10 @@ export default function DLQPage() {
                     <td>
                       <button
                         id={`btn-retry-dlq-${e.id}`}
-                        className="btn btn-success btn-sm"
+                        className="btn btn-success btn-sm shadow-glow"
                         onClick={() => retryJob(e.jobId)}
                       >
-                        ↺ Retry
+                        <span className="material-symbols-outlined text-[16px] mr-1">refresh</span> Retry
                       </button>
                     </td>
                   </tr>

@@ -65,17 +65,23 @@ function JobDetailPanel({ jobId, token, onClose, onRetry }: { jobId: string; tok
       <div className="modal" style={{ maxWidth: 680 }} onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <div>
-            <div className="modal-title">{job.name}</div>
+            <div className="modal-title font-headline text-[20px]">{job.name}</div>
             <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginTop: 2 }} className="text-mono">{job.id}</div>
           </div>
           <div style={{ display: 'flex', gap: '8px' }}>
             {['FAILED', 'DLQ', 'CANCELLED'].includes(job.status) && (
-              <button className="btn btn-success btn-sm" onClick={retry}>↺ Retry</button>
+              <button className="btn btn-success btn-sm shadow-glow" onClick={retry}>
+                <span className="material-symbols-outlined text-[16px] mr-1">refresh</span> Retry
+              </button>
             )}
             {['QUEUED', 'SCHEDULED'].includes(job.status) && (
-              <button className="btn btn-danger btn-sm" onClick={cancel}>✕ Cancel</button>
+              <button className="btn btn-danger btn-sm" onClick={cancel}>
+                <span className="material-symbols-outlined text-[16px] mr-1">cancel</span> Cancel
+              </button>
             )}
-            <button className="btn btn-ghost btn-sm btn-icon" onClick={onClose}>✕</button>
+            <button className="btn btn-ghost btn-sm btn-icon" onClick={onClose}>
+              <span className="material-symbols-outlined">close</span>
+            </button>
           </div>
         </div>
         <div className="modal-body" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
@@ -182,20 +188,20 @@ export default function JobsPage() {
 
   return (
     <>
-      <header className="header">
-        <h1 className="header-title">Job Explorer</h1>
+      <div className="page-header">
+        <h1 className="page-title">Job Explorer</h1>
         <div style={{ display: 'flex', gap: '8px' }}>
           <input
-            className="form-input"
-            style={{ width: 200 }}
+            className="form-input glass-panel"
+            style={{ width: 200, padding: '8px 12px' }}
             placeholder="Search jobs..."
             value={filters.search}
             onChange={(e) => setFilters({ ...filters, search: e.target.value, page: 1 })}
             id="input-job-search"
           />
           <select
-            className="form-select"
-            style={{ width: 150 }}
+            className="form-select glass-panel"
+            style={{ width: 150, padding: '8px 12px' }}
             value={filters.status}
             onChange={(e) => setFilters({ ...filters, status: e.target.value, page: 1 })}
             id="select-job-status"
@@ -203,14 +209,14 @@ export default function JobsPage() {
             {STATUSES.map((s) => <option key={s} value={s}>{s || 'All Status'}</option>)}
           </select>
         </div>
-      </header>
+      </div>
 
-      <div className="page-container">
+      <div className="page-container" style={{ paddingTop: 0 }}>
         {loading ? (
           <div className="loading-container"><div className="spinner" /></div>
         ) : (
           <>
-            <div className="table-wrapper">
+            <div className="table-wrapper glass-panel">
               <table>
                 <thead>
                   <tr>

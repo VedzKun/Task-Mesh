@@ -4,39 +4,43 @@
    Theme: Dark mode, glassmorphism, deep space aesthetic
    ===================================================================== */
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Hanken+Grotesk:wght@300;400;500;600;700&family=Geist:wght@300;400;500;600;700&display=swap');
 
 /* ── CSS Custom Properties ──────────────────────────────────────────── */
 :root {
   /* Palette */
-  --color-bg:           #060913;
-  --color-surface:      #0d1117;
-  --color-surface-2:    #161b22;
-  --color-surface-3:    #1c2333;
-  --color-border:       rgba(255, 255, 255, 0.06);
-  --color-border-hover: rgba(255, 255, 255, 0.12);
+  --color-bg:           #010f1f;
+  --color-surface:      #051424;
+  --color-surface-2:    #0d1c2d;
+  --color-surface-3:    #122131;
+  --color-border:       rgba(255, 255, 255, 0.08);
+  --color-border-hover: rgba(255, 255, 255, 0.15);
 
   /* Brand */
   --color-primary:      #6c8cff;
-  --color-primary-dim:  rgba(108, 140, 255, 0.12);
-  --color-primary-glow: rgba(108, 140, 255, 0.3);
-  --color-accent:       #a855f7;
-  --color-accent-dim:   rgba(168, 85, 247, 0.12);
+  --color-primary-dim:  rgba(108, 140, 255, 0.15);
+  --color-primary-glow: rgba(108, 140, 255, 0.35);
+  --color-accent:       #a5b4fc;
+  --color-accent-dim:   rgba(165, 180, 252, 0.15);
+
+  /* Glassmorphism */
+  --glass-bg:           rgba(26, 28, 35, 0.4);
+  --glass-border:       rgba(255, 255, 255, 0.06);
 
   /* Status colors */
-  --color-success:      #22d3a0;
-  --color-success-dim:  rgba(34, 211, 160, 0.12);
+  --color-success:      #2dd4bf;
+  --color-success-dim:  rgba(45, 212, 191, 0.15);
   --color-warning:      #fbbf24;
-  --color-warning-dim:  rgba(251, 191, 36, 0.12);
-  --color-danger:       #f87171;
-  --color-danger-dim:   rgba(248, 113, 113, 0.12);
+  --color-warning-dim:  rgba(251, 191, 36, 0.15);
+  --color-danger:       #fb7185;
+  --color-danger-dim:   rgba(251, 113, 133, 0.15);
   --color-info:         #38bdf8;
-  --color-info-dim:     rgba(56, 189, 248, 0.12);
+  --color-info-dim:     rgba(56, 189, 248, 0.15);
 
   /* Typography */
-  --color-text:         #e6edf3;
-  --color-text-muted:   #7d8590;
-  --color-text-subtle:  #484f58;
+  --color-text:         #d4e4fa;
+  --color-text-muted:   #8e909f;
+  --color-text-subtle:  #444653;
 
   /* Spacing */
   --space-1: 4px;
@@ -50,10 +54,10 @@
   --space-12: 48px;
 
   /* Radius */
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 16px;
-  --radius-xl: 24px;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 20px;
   --radius-full: 9999px;
 
   /* Shadows */
@@ -68,10 +72,10 @@
   --transition-slow: 400ms ease;
 
   /* Sidebar */
-  --sidebar-width: 240px;
-  --header-height: 56px;
+  --sidebar-width: 260px;
+  --header-height: 64px;
 
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: 'Hanken Grotesk', system-ui, sans-serif;
 }
 
 /* ── Reset ──────────────────────────────────────────────────────────── */
@@ -82,8 +86,8 @@ html { scroll-behavior: smooth; }
 body {
   background: var(--color-bg);
   color: var(--color-text);
-  font-family: 'Inter', system-ui, sans-serif;
-  font-size: 14px;
+  font-family: 'Hanken Grotesk', system-ui, sans-serif;
+  font-size: 15px;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
@@ -93,16 +97,52 @@ a { color: inherit; text-decoration: none; }
 button { cursor: pointer; font-family: inherit; }
 input, textarea, select { font-family: inherit; }
 
+h1, h2, h3, h4, h5, h6, .page-title, .card-title, .modal-title, .stat-value {
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  letter-spacing: -0.01em;
+}
+
+.td-mono, .text-mono, .badge {
+  font-family: 'Geist', monospace;
+}
+
 /* ── Background Radials ─────────────────────────────────────────────── */
 body::before {
   content: '';
   position: fixed;
   inset: 0;
   background:
-    radial-gradient(ellipse 60% 40% at 70% 10%, rgba(108, 140, 255, 0.06) 0%, transparent 60%),
-    radial-gradient(ellipse 40% 30% at 20% 80%, rgba(168, 85, 247, 0.04) 0%, transparent 50%);
+    radial-gradient(circle at top left, rgba(108, 140, 255, 0.05), transparent 40%),
+    radial-gradient(circle at bottom right, rgba(182, 196, 255, 0.03), transparent 40%);
   pointer-events: none;
   z-index: 0;
+}
+
+/* ── Stitch Design System Classes ────────────────────────────────────── */
+.glass-panel {
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+  border-radius: var(--radius-lg);
+}
+
+.bento-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 24px;
+}
+
+.status-chip {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  font-family: 'Geist', monospace;
 }
 
 /* ── Layout ─────────────────────────────────────────────────────────── */

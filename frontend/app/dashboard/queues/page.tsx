@@ -104,8 +104,8 @@ export default function QueuesPage() {
 
   return (
     <>
-      <header className="header">
-        <h1 className="header-title">Queues</h1>
+      <div className="page-header">
+        <h1 className="page-title">Queues Management</h1>
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
           <select
             className="form-select"
@@ -116,13 +116,13 @@ export default function QueuesPage() {
           >
             {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
-          <button id="btn-new-queue" className="btn btn-primary" onClick={() => setShowCreate(true)} disabled={!selectedProject}>
-            + New Queue
+          <button id="btn-new-queue" className="btn btn-primary shadow-glow" onClick={() => setShowCreate(true)} disabled={!selectedProject}>
+            <span className="material-symbols-outlined text-[18px]">add</span> New Queue
           </button>
         </div>
-      </header>
+      </div>
 
-      <div className="page-container">
+      <div className="page-container" style={{ paddingTop: 0 }}>
         {loading ? (
           <div className="loading-container"><div className="spinner" /></div>
         ) : queues.length === 0 ? (
@@ -133,7 +133,7 @@ export default function QueuesPage() {
             <button className="btn btn-primary" onClick={() => setShowCreate(true)}>Create Queue</button>
           </div>
         ) : (
-          <div className="table-wrapper">
+          <div className="table-wrapper glass-panel">
             <table>
               <thead>
                 <tr>
@@ -179,13 +179,13 @@ export default function QueuesPage() {
                           onClick={() => togglePause(q)}
                           title={q.isPaused ? 'Resume' : 'Pause'}
                         >
-                          {q.isPaused ? '▶' : '⏸'}
+                          <span className="material-symbols-outlined text-[18px]">{q.isPaused ? 'play_arrow' : 'pause'}</span>
                         </button>
                         <button
-                          className="btn btn-ghost btn-sm btn-icon"
+                          className="btn btn-ghost btn-sm btn-icon hover:text-danger hover:bg-danger/10"
                           onClick={() => deleteQueue(q)}
                           title="Delete"
-                        >🗑</button>
+                        ><span className="material-symbols-outlined text-[18px]">delete</span></button>
                       </div>
                     </td>
                   </tr>
@@ -200,8 +200,10 @@ export default function QueuesPage() {
         <div className="modal-overlay" onClick={() => setShowCreate(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <span className="modal-title">Create Queue</span>
-              <button className="btn btn-ghost btn-sm btn-icon" onClick={() => setShowCreate(false)}>✕</button>
+              <span className="modal-title font-headline text-[20px]">Create Queue</span>
+              <button className="btn btn-ghost btn-sm btn-icon" onClick={() => setShowCreate(false)}>
+                <span className="material-symbols-outlined">close</span>
+              </button>
             </div>
             <form onSubmit={createQueue}>
               <div className="modal-body">

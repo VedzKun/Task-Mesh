@@ -47,24 +47,25 @@ export default function WorkersPage() {
 
   return (
     <>
-      <header className="header">
-        <h1 className="header-title">Workers</h1>
-        <div className="header-live-indicator">
-          <span className="live-dot" />
-          Auto-refreshes every 10s
+      <div className="page-header">
+        <h1 className="page-title">Workers Fleet</h1>
+        <div className="header-live-indicator glass-panel px-3 py-1.5 rounded-full flex items-center gap-2" style={{ border: '1px solid var(--color-border)' }}>
+          <span className="w-2 h-2 rounded-full bg-success pulse-indicator" style={{ backgroundColor: 'var(--color-success)' }} />
+          <span className="font-label text-[12px] text-white">Auto-refreshes every 10s</span>
         </div>
-      </header>
+      </div>
 
-      <div className="page-container">
-        <div className="grid-3" style={{ marginBottom: 'var(--space-6)' }}>
+      <div className="page-container" style={{ paddingTop: 0 }}>
+        <div className="bento-grid" style={{ marginBottom: 'var(--space-6)' }}>
           {[
             { label: 'Active Workers', value: activeCount, color: 'var(--color-success)' },
             { label: 'Busy Workers', value: busyCount, color: 'var(--color-primary)' },
             { label: 'Jobs Running', value: totalRunning, color: 'var(--color-info)' },
-          ].map((s) => (
-            <div key={s.label} className="stat-card" style={{ '--stat-accent': s.color } as any}>
-              <div className="stat-value" style={{ color: s.color }}>{s.value}</div>
-              <div className="stat-label">{s.label}</div>
+          ].map((s, idx) => (
+            <div key={s.label} className="col-span-12 md:col-span-4 glass-panel p-6 flex flex-col relative overflow-hidden group">
+              <div className="absolute -right-10 -top-10 w-32 h-32 rounded-full blur-3xl transition-all group-hover:scale-150" style={{ backgroundColor: s.color, opacity: 0.1 }}></div>
+              <div className="font-headline text-[32px] font-bold" style={{ color: s.color, marginBottom: '8px' }}>{s.value}</div>
+              <div className="font-label text-[12px] text-outline uppercase tracking-widest" style={{ color: 'var(--color-text-muted)' }}>{s.label}</div>
             </div>
           ))}
         </div>
@@ -78,7 +79,7 @@ export default function WorkersPage() {
             <div className="empty-state-desc">Start a worker process to begin processing jobs</div>
           </div>
         ) : (
-          <div className="table-wrapper">
+          <div className="table-wrapper glass-panel">
             <table>
               <thead>
                 <tr>

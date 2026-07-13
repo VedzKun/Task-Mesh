@@ -36,10 +36,12 @@ function LoginForm() {
 
   return (
     <div className="auth-page">
-      <div className="auth-card">
-        <div className="auth-logo">
-          <div className="logo-icon" style={{ width: 36, height: 36, borderRadius: 10, background: 'linear-gradient(135deg, #6c8cff, #a855f7)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, boxShadow: '0 0 20px rgba(108,140,255,0.3)' }}>⬡</div>
-          <span className="logo-text" style={{ fontSize: 20, fontWeight: 800, background: 'linear-gradient(90deg, #6c8cff, #a855f7)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Task-Mesh</span>
+      <div className="auth-card glass-panel" style={{ padding: 'var(--space-8)' }}>
+        <div className="auth-logo" style={{ marginBottom: 'var(--space-6)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg overflow-hidden flex-shrink-0" style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-accent))', boxShadow: 'var(--shadow-glow)' }}>
+            <span className="material-symbols-outlined text-white" style={{ fontSize: '28px' }}>hub</span>
+          </div>
+          <span className="logo-text font-headline text-[24px]">Task-Mesh</span>
         </div>
 
         <h1 className="auth-title">{isRegister ? 'Create account' : 'Welcome back'}</h1>
@@ -61,7 +63,7 @@ function LoginForm() {
             <input id="input-password" className="form-input" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required minLength={8} />
           </div>
 
-          <button id="btn-auth-submit" type="submit" className="btn btn-primary btn-lg" style={{ marginTop: '8px', justifyContent: 'center' }} disabled={loading}>
+          <button id="btn-auth-submit" type="submit" className="btn btn-primary btn-lg shadow-glow" style={{ marginTop: '16px', justifyContent: 'center' }} disabled={loading}>
             {loading ? 'Please wait...' : isRegister ? 'Create Account' : 'Sign In'}
           </button>
         </form>

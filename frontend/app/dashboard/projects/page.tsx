@@ -37,8 +37,10 @@ function CreateProjectModal({ onClose, onCreated }: { onClose: () => void; onCre
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <span className="modal-title">Create New Project</span>
-          <button className="btn btn-ghost btn-sm btn-icon" onClick={onClose}>✕</button>
+          <span className="modal-title font-headline text-[20px]">Create New Project</span>
+          <button className="btn btn-ghost btn-sm btn-icon" onClick={onClose}>
+            <span className="material-symbols-outlined">close</span>
+          </button>
         </div>
         <form onSubmit={submit}>
           <div className="modal-body">
@@ -133,12 +135,14 @@ export default function ProjectsPage() {
 
   return (
     <>
-      <header className="header">
-        <h1 className="header-title">Projects</h1>
-        <button id="btn-new-project" className="btn btn-primary" onClick={() => setShowCreate(true)}>+ New Project</button>
-      </header>
+      <div className="page-header">
+        <h1 className="page-title">Projects Overview</h1>
+        <button id="btn-new-project" className="btn btn-primary shadow-glow" onClick={() => setShowCreate(true)}>
+          <span className="material-symbols-outlined text-[18px]">add</span> New Project
+        </button>
+      </div>
 
-      <div className="page-container">
+      <div className="page-container" style={{ paddingTop: 0 }}>
         {loading ? (
           <div className="loading-container"><div className="spinner" /><span>Loading projects...</span></div>
         ) : projects.length === 0 ? (
@@ -149,19 +153,22 @@ export default function ProjectsPage() {
             <button className="btn btn-primary" onClick={() => setShowCreate(true)}>Create Project</button>
           </div>
         ) : (
-          <div className="grid-3">
+          <div className="bento-grid">
             {projects.map((p) => (
-              <div key={p.id} className="card" style={{ padding: '24px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-                  <span style={{ fontSize: '18px', fontWeight: 700 }}>{p.name}</span>
+              <div key={p.id} className="col-span-12 md:col-span-6 xl:col-span-4 glass-panel p-6 flex flex-col transition-all hover:border-primary/50 group relative overflow-hidden">
+                <div className="absolute -right-10 -top-10 w-32 h-32 bg-primary/5 rounded-full blur-2xl transition-all group-hover:scale-150"></div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px', position: 'relative', zIndex: 1 }}>
+                  <span className="font-headline text-[20px] font-bold text-white">{p.name}</span>
                   <button
-                    className="btn btn-ghost btn-sm btn-icon"
+                    className="p-1 opacity-0 group-hover:opacity-100 text-danger hover:bg-danger/10 rounded transition-all"
                     onClick={() => deleteProject(p.id, p.name)}
                     title="Delete project"
-                  >🗑</button>
+                  >
+                    <span className="material-symbols-outlined text-[20px]">delete</span>
+                  </button>
                 </div>
-                {p.description && <p style={{ color: 'var(--color-text-muted)', fontSize: '13px', marginBottom: '16px' }}>{p.description}</p>}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
+                {p.description && <p style={{ color: 'var(--color-text-muted)', fontSize: '14px', marginBottom: '24px', flex: 1, position: 'relative', zIndex: 1 }}>{p.description}</p>}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: 'auto', position: 'relative', zIndex: 1 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
                     <span style={{ color: 'var(--color-text-muted)' }}>API Key</span>
                     <span className="text-mono">{p.apiKeyPrefix}...</span>
